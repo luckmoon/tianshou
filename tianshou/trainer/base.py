@@ -523,7 +523,9 @@ class BaseTrainer(ABC):
         """
         try:
             self.is_run = True
+            # self.__iter__返回一个迭代器，调用__next__不断遍历
             deque(self, maxlen=0)  # feed the entire iterator into a zero-length deque
+            # 遍历完后收集信息
             info = gather_info(
                 start_time=self.start_time,
                 policy_update_time=self.policy_update_time,
