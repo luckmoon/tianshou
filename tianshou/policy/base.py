@@ -498,10 +498,14 @@ class BasePolicy(nn.Module, Generic[TTrainingStats], ABC):
         if buffer is None:
             return TrainingStats()  # type: ignore[return-value]
         start_time = time.time()
+        print(f"buffer size: {len(buffer)}")
         batch, indices = buffer.sample(sample_size)
         self.updating = True
+        # process_fn()：在获取训练数据之前和buffer进行交互，比如使用GAE或者nstep算法来估计优势函数；
         batch = self.process_fn(batch, buffer, indices)
+        # learn()：使用一个Batch的数据进行策略的更新；
         training_stat = self.learn(batch, **kwargs)
+        # post_process_fn()：使用一个Batch的数据进行Buffer的更新（比如更新PER）；
         self.post_process_fn(batch, buffer, indices)
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
@@ -624,11 +628,13 @@ class BasePolicy(nn.Module, Generic[TTrainingStats], ABC):
         # and are truncated at the end of each episode
         terminal = indices[-1]
         with torch.no_grad():
+            # 估计值
             target_q_torch = target_q_fn(buffer, terminal)  # (bsz, ?)
         target_q = to_numpy(target_q_torch.reshape(bsz, -1))
         target_q = target_q * BasePolicy.value_mask(buffer, terminal).reshape(-1, 1)
         end_flag = buffer.done.copy()
         end_flag[buffer.unfinished_index()] = True
+        # n个真实值+一个估计值，得到TD目标
         target_q = _nstep_return(rew, end_flag, target_q, indices, gamma, n_step)
 
         batch.returns = to_torch_as(target_q, target_q_torch)

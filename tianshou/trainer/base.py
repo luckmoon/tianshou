@@ -185,6 +185,8 @@ class BaseTrainer(ABC):
 
         self.policy = policy
 
+        # False
+        # print(f"buffer is not None: {buffer is not None}")
         if buffer is not None:
             buffer = policy.process_buffer(buffer)
         self.buffer = buffer
@@ -313,7 +315,14 @@ class BaseTrainer(ABC):
             while t.n < t.total and not self.stop_fn_flag:
                 train_stat: CollectStatsBase
                 if self.train_collector is not None:
+                    # 这是进入trainer之前收集的
+                    # len(self.train_collector.buffer): 320
+                    # print(f"len(self.train_collector.buffer): {len(self.train_collector.buffer)}")
                     train_stat, self.stop_fn_flag = self.train_step()
+                    # 上一步收集了10条
+                    # 10 == 环境数量？
+                    # len(self.train_collector.buffer): 330
+                    print(f"len(self.train_collector.buffer): {len(self.train_collector.buffer)}")
                     # print(f"train_stat: {train_stat}, self.stop_fn_flag: {self.stop_fn_flag}")
                     pbar_data_dict = {
                         "env_step": str(self.env_step),
@@ -611,13 +620,15 @@ class OffpolicyTrainer(BaseTrainer):
         """
         assert self.train_collector is not None
         n_collected_steps = collect_stats.n_collected_steps
-        print(f"n_collected_steps: {n_collected_steps}")
         n_gradient_steps = round(self.update_per_step * n_collected_steps)
+        # n_gradient_steps: 1, n_collected_steps: 10, self.update_per_step: 0.1
+        print(f"n_gradient_steps: {n_gradient_steps}, n_collected_steps: {n_collected_steps}, self.update_per_step: {self.update_per_step}")
         if n_gradient_steps == 0:
             raise ValueError(
                 f"n_gradient_steps is 0, n_collected_steps={n_collected_steps}, "
                 f"update_per_step={self.update_per_step}",
             )
+        print(f"len(self.train_collector.buffer): {len(self.train_collector.buffer)}")
         for _ in range(n_gradient_steps):
             update_stat = self._sample_and_update(self.train_collector.buffer)
 

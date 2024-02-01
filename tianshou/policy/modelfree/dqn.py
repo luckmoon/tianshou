@@ -90,6 +90,7 @@ class DQNPolicy(BasePolicy[TDQNTrainingStats], Generic[TDQNTrainingStats]):
             estimation_step > 0
         ), f"estimation_step should be greater than 0 but got: {estimation_step}"
         self.n_step = estimation_step
+        # 是否使用目标网络
         self._target = target_update_freq > 0
         self.freq = target_update_freq
         self._iter = 0
@@ -139,6 +140,7 @@ class DQNPolicy(BasePolicy[TDQNTrainingStats], Generic[TDQNTrainingStats]):
         buffer: ReplayBuffer,
         indices: np.ndarray,
     ) -> BatchWithReturnsProtocol:
+        # 计算TD目标
         """Compute the n-step return for Q-learning targets.
 
         More details can be found at
@@ -210,11 +212,14 @@ class DQNPolicy(BasePolicy[TDQNTrainingStats], Generic[TDQNTrainingStats]):
 
     def learn(self, batch: RolloutBatchProtocol, *args: Any, **kwargs: Any) -> TDQNTrainingStats:
         if self._target and self._iter % self.freq == 0:
+            # 如果使用目标网络，定期将TD网络的参数复制给目标网络
             self.sync_weight()
         self.optim.zero_grad()
         weight = batch.pop("weight", 1.0)
+        # 预测的Q值
         q = self(batch).logits
         q = q[np.arange(len(q)), batch.act]
+        # TD目标
         returns = to_torch_as(batch.returns.flatten(), q)
         td_error = returns - q
 
