@@ -226,7 +226,8 @@ def test_dqn(args=get_args()):
             test_collector.reset()
             result = test_collector.collect(n_episode=args.test_num, render=args.render)
         rew = result.returns_stat.mean
-        print(f"Mean reward (over {result['n/ep']} episodes): {rew}")
+        # print(f"Mean reward (over {result['n/ep']} episodes): {rew}")
+        print(f"Mean reward (over  episodes): {rew}")
 
     if args.watch:
         watch()
@@ -234,6 +235,9 @@ def test_dqn(args=get_args()):
 
     # test train_collector and start filling replay buffer
     train_collector.collect(n_step=args.batch_size * args.training_num)
+    print(
+        f"len(train_collector.buffer): {len(train_collector.buffer)}, args.batch_size: {args.batch_size}, args.training_num: {args.training_num}"
+    )
     # trainer
     result = OffpolicyTrainer(
         policy=policy,

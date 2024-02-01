@@ -306,12 +306,15 @@ class BaseTrainer(ABC):
 
         progress = tqdm.tqdm if self.show_progress else DummyTqdm
 
+        # self.train_collector is not None:True
+        print(f"self.train_collector is not None:{self.train_collector is not None}")
         # perform n step_per_epoch
         with progress(total=self.step_per_epoch, desc=f"Epoch #{self.epoch}", **tqdm_config) as t:
             while t.n < t.total and not self.stop_fn_flag:
                 train_stat: CollectStatsBase
                 if self.train_collector is not None:
                     train_stat, self.stop_fn_flag = self.train_step()
+                    # print(f"train_stat: {train_stat}, self.stop_fn_flag: {self.stop_fn_flag}")
                     pbar_data_dict = {
                         "env_step": str(self.env_step),
                         "rew": f"{self.last_rew:.2f}",
@@ -431,12 +434,22 @@ class BaseTrainer(ABC):
         assert self.episode_per_test is not None
         assert self.train_collector is not None
         should_stop_training = False
+        # print(f"self.train_fn:{self.train_fn}")
         if self.train_fn:
             self.train_fn(self.epoch, self.env_step)
+        # self.step_per_collect: 10
+        # self.episode_per_collect: None
+        # print(f"self.step_per_collect: {self.step_per_collect}")
+        # print(f"self.episode_per_collect: {self.episode_per_collect}")
         result = self.train_collector.collect(
             n_step=self.step_per_collect,
             n_episode=self.episode_per_collect,
         )
+        # result: CollectStats(n_collected_episodes=0,
+        # n_collected_steps=10, collect_time=0.010456323623657227,
+        # collect_speed=956.3590760881957, returns=array([], dtype=float64),
+        # returns_stat=None, lens=array([], dtype=int64), lens_stat=None)
+        # print(f"result: {result}")
 
         self.env_step += result.n_collected_steps
 
@@ -474,6 +487,7 @@ class BaseTrainer(ABC):
                 self.best_reward = test_result.returns_stat.mean
                 self.best_reward_std = test_result.returns_stat.std
             else:
+                print("=============")
                 self.policy.train()
         return result, should_stop_training
 
@@ -597,6 +611,7 @@ class OffpolicyTrainer(BaseTrainer):
         """
         assert self.train_collector is not None
         n_collected_steps = collect_stats.n_collected_steps
+        print(f"n_collected_steps: {n_collected_steps}")
         n_gradient_steps = round(self.update_per_step * n_collected_steps)
         if n_gradient_steps == 0:
             raise ValueError(
