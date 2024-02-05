@@ -322,7 +322,7 @@ class BaseTrainer(ABC):
                     # 上一步收集了10条
                     # 10 == 环境数量？
                     # len(self.train_collector.buffer): 330
-                    print(f"len(self.train_collector.buffer): {len(self.train_collector.buffer)}")
+                    # print(f"len(self.train_collector.buffer): {len(self.train_collector.buffer)}")
                     # print(f"train_stat: {train_stat}, self.stop_fn_flag: {self.stop_fn_flag}")
                     pbar_data_dict = {
                         "env_step": str(self.env_step),
@@ -628,7 +628,7 @@ class OffpolicyTrainer(BaseTrainer):
                 f"n_gradient_steps is 0, n_collected_steps={n_collected_steps}, "
                 f"update_per_step={self.update_per_step}",
             )
-        print(f"len(self.train_collector.buffer): {len(self.train_collector.buffer)}")
+        # print(f"len(self.train_collector.buffer): {len(self.train_collector.buffer)}")
         for _ in range(n_gradient_steps):
             update_stat = self._sample_and_update(self.train_collector.buffer)
 

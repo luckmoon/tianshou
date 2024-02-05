@@ -116,6 +116,8 @@ class A2CPolicy(PGPolicy[TA2CTrainingStats], Generic[TA2CTrainingStats]):  # typ
         buffer: ReplayBuffer,
         indices: np.ndarray,
     ) -> BatchWithAdvantagesProtocol:
+        # 核心逻辑就是算lambda的折扣回报(episode的)和优势函数(gae)，其中，lambda的折扣回报的计算用
+        # lambda的优势函数加上V(S_t)
         v_s, v_s_ = [], []
         with torch.no_grad():
             for minibatch in batch.split(self.max_batchsize, shuffle=False, merge_last=True):
@@ -168,9 +170,11 @@ class A2CPolicy(PGPolicy[TA2CTrainingStats], Generic[TA2CTrainingStats]):  # typ
                 dist = self(minibatch).dist
                 log_prob = dist.log_prob(minibatch.act)
                 log_prob = log_prob.reshape(len(minibatch.adv), -1).transpose(0, 1)
+                # 策略梯度定理，其中log的系数\Phi的估计有好几种，可参考gae的论文，这里用gae估计的优势函数
                 actor_loss = -(log_prob * minibatch.adv).mean()
                 # calculate loss for critic
                 value = self.critic(minibatch.obs).flatten()
+                # label是lambda的episode回报
                 vf_loss = F.mse_loss(minibatch.returns, value)
                 # calculate regularization and overall loss
                 ent_loss = dist.entropy().mean()

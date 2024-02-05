@@ -498,7 +498,7 @@ class BasePolicy(nn.Module, Generic[TTrainingStats], ABC):
         if buffer is None:
             return TrainingStats()  # type: ignore[return-value]
         start_time = time.time()
-        print(f"buffer size: {len(buffer)}")
+        # print(f"buffer size: {len(buffer)}")
         batch, indices = buffer.sample(sample_size)
         self.updating = True
         # process_fn()：在获取训练数据之前和buffer进行交互，比如使用GAE或者nstep算法来估计优势函数；
