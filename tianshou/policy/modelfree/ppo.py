@@ -130,6 +130,7 @@ class PPOPolicy(A2CPolicy[TPPOTrainingStats], Generic[TPPOTrainingStats]):  # ty
         if self.recompute_adv:
             # buffer input `buffer` and `indices` to be used in `learn()`.
             self._buffer, self._indices = buffer, indices
+        # 优势函数和回报都放到了batch里
         batch = self._compute_returns(batch, buffer, indices)
         batch.act = to_torch_as(batch.act, batch.v_s)
         with torch.no_grad():

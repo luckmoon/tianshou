@@ -134,6 +134,7 @@ class A2CPolicy(PGPolicy[TA2CTrainingStats], Generic[TA2CTrainingStats]):  # typ
         if self.rew_norm:  # unnormalize v_s & v_s_
             v_s = v_s * np.sqrt(self.ret_rms.var + self._eps)
             v_s_ = v_s_ * np.sqrt(self.ret_rms.var + self._eps)
+        # 这似乎是一个lambda的return，即G_{t}^{\lambda}
         unnormalized_returns, advantages = self.compute_episodic_return(
             batch,
             buffer,
