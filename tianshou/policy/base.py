@@ -632,6 +632,7 @@ class BasePolicy(nn.Module, Generic[TTrainingStats], ABC):
         terminal = indices[-1]
         with torch.no_grad():
             # 估计值
+            # 用目标网络计算的
             target_q_torch = target_q_fn(buffer, terminal)  # (bsz, ?)
         target_q = to_numpy(target_q_torch.reshape(bsz, -1))
         target_q = target_q * BasePolicy.value_mask(buffer, terminal).reshape(-1, 1)

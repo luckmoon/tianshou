@@ -137,6 +137,7 @@ class PGPolicy(BasePolicy[TPGTrainingStats], Generic[TPGTrainingStats]):
         """
         v_s_ = np.full(indices.shape, self.ret_rms.mean)
         # gae_lambda = 1.0 means we use Monte Carlo estimate
+        # 计算G_t^{lambda}，而不是G_t
         unnormalized_returns, _ = self.compute_episodic_return(
             batch,
             buffer,

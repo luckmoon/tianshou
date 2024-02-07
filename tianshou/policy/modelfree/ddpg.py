@@ -197,10 +197,11 @@ class DDPGPolicy(BasePolicy[TDDPGTrainingStats], Generic[TDDPGTrainingStats]):
 
     def learn(self, batch: RolloutBatchProtocol, *args: Any, **kwargs: Any) -> TDDPGTrainingStats:  # type: ignore
         # critic
+        # 这里不只是optimizer，而且在optimize
         td, critic_loss = self._mse_optimizer(batch, self.critic, self.critic_optim)
         batch.weight = td  # prio-buffer
         # actor
-        # actor的作用是寻找Q的最大值，Q是由critic估计的，所有actor的损失就是负的critic
+        # actor的作用是寻找Q的最大值，Q是由critic估计的，所以actor的损失就是负的critic
         # https://zhuanlan.zhihu.com/p/111257402
         actor_loss = -self.critic(batch.obs, self(batch).act).mean()
         self.actor_optim.zero_grad()
