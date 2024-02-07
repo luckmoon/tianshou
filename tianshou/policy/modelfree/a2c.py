@@ -126,6 +126,7 @@ class A2CPolicy(PGPolicy[TA2CTrainingStats], Generic[TA2CTrainingStats]):  # typ
         batch.v_s = torch.cat(v_s, dim=0).flatten()  # old value
         v_s = batch.v_s.cpu().numpy()
         v_s_ = torch.cat(v_s_, dim=0).flatten().cpu().numpy()
+        print(f"v_s.shape:{v_s.shape}, v_s_.shape:{v_s_.shape}")
         # when normalizing values, we do not minus self.ret_rms.mean to be numerically
         # consistent with OPENAI baselines' value normalization pipeline. Empirical
         # study also shows that "minus mean" will harm performances a tiny little bit
@@ -135,6 +136,10 @@ class A2CPolicy(PGPolicy[TA2CTrainingStats], Generic[TA2CTrainingStats]):  # typ
             v_s = v_s * np.sqrt(self.ret_rms.var + self._eps)
             v_s_ = v_s_ * np.sqrt(self.ret_rms.var + self._eps)
         # 这似乎是一个lambda的return，即G_{t}^{\lambda}
+        # unnormalized_returns 共80个数，这里有16个环境，设置了每个step要收集80条数据，所以
+        # 每个env要收集5条数据，这5条是连续时间的，env之间不一定是连续时间的（？）。这80个数，
+        # 每个数是某个t时刻下的$G_t^{\lambda}$，advantages是对应时刻t下的$A_t^{\lambda}$，即
+        # GAE_{t}(\lambda, \gamma)。
         unnormalized_returns, advantages = self.compute_episodic_return(
             batch,
             buffer,
@@ -144,6 +149,7 @@ class A2CPolicy(PGPolicy[TA2CTrainingStats], Generic[TA2CTrainingStats]):  # typ
             gamma=self.gamma,
             gae_lambda=self.gae_lambda,
         )
+        print(f"unnormalized_returns.shape:{unnormalized_returns.shape}, advantages.shape:{advantages.shape}")
         if self.rew_norm:
             batch.returns = unnormalized_returns / np.sqrt(self.ret_rms.var + self._eps)
             self.ret_rms.update(unnormalized_returns)
@@ -172,10 +178,17 @@ class A2CPolicy(PGPolicy[TA2CTrainingStats], Generic[TA2CTrainingStats]):  # typ
                 log_prob = dist.log_prob(minibatch.act)
                 log_prob = log_prob.reshape(len(minibatch.adv), -1).transpose(0, 1)
                 # 策略梯度定理，其中log的系数\Phi的估计有好几种，可参考gae的论文，这里用gae估计的优势函数
+                # 这里的优势函数是A_t^{\lambda}，也就是GAE
                 actor_loss = -(log_prob * minibatch.adv).mean()
                 # calculate loss for critic
                 value = self.critic(minibatch.obs).flatten()
                 # label是lambda的episode回报
+                # 这里的value有80个数，每个数是某个时刻t下的critic预测值，
+                # label是对应时刻t下的lambda回报（见上面process_fn），
+                # $$
+                # \begin{aligned}G_t^{(\lambda)}&=(1-\lambda)G_t^{(1)}+(1-\lambda)\lambda G_t^{(2)}+...+(1-\lambda)\lambda^{n-1}G_t^{(n)}\\&\approx[(1-\lambda)+(1-\lambda)\lambda+...+(1-\lambda)\lambda^{n-1}]V(S_t)=V(S_t)\end{aligned}
+                # $$
+                # 所以critic拟合的相当于是V_t
                 vf_loss = F.mse_loss(minibatch.returns, value)
                 # calculate regularization and overall loss
                 ent_loss = dist.entropy().mean()

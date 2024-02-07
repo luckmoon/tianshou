@@ -655,6 +655,9 @@ class OnpolicyTrainer(BaseTrainer):
     ) -> TrainingStats:
         """Perform one on-policy update by passing the entire buffer to the policy's update method."""
         assert self.train_collector is not None
+        # len(self.train_collector.buffer): 80
+        print(f"len(self.train_collector.buffer): {len(self.train_collector.buffer)}")
+        # 这里的update是一个step的update，一个step收集了80条观察数据，这80条数据来自16个env，每个env时间连续地连续收集5条，即env.step走5次
         training_stat = self.policy.update(
             sample_size=0,
             buffer=self.train_collector.buffer,
@@ -680,6 +683,7 @@ class OnpolicyTrainer(BaseTrainer):
         # The second difference is that batches of data are sampled without replacement
         # during training, whereas in off-policy or offline training, the batches are
         # sampled with replacement (and potentially custom prioritization).
+        # 在onpolicy中，每次用buffer中的80条数更新一次模型后，就会清空buffer，重新收集，更新模型。
         self.train_collector.reset_buffer(keep_statistics=True)
 
         # The step is the number of mini-batches used for the update, so essentially

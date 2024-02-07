@@ -573,6 +573,9 @@ class BasePolicy(nn.Module, Generic[TTrainingStats], ABC):
         else:
             v_s_ = to_numpy(v_s_.flatten())
             v_s_ = v_s_ * BasePolicy.value_mask(buffer, indices)
+        # In [2]: v_s_ = np.array([1,2,3,4,5,6])
+        # In [3]: v_s = np.roll(v_s_, 1)
+        # v_s = array([6, 1, 2, 3, 4, 5])
         v_s = np.roll(v_s_, 1) if v_s is None else to_numpy(v_s.flatten())
 
         end_flag = np.logical_or(batch.terminated, batch.truncated)
@@ -694,9 +697,11 @@ def _gae_return(
     :return:
     """
     returns = np.zeros(rew.shape)
+    # print(f"returns.shape:{returns.shape}")
     delta = rew + v_s_ * gamma - v_s
     discount = (1.0 - end_flag) * (gamma * gae_lambda)
     gae = 0.0
+    print(f"len(rew): {len(rew)}")
     for i in range(len(rew) - 1, -1, -1):
         gae = delta[i] + discount[i] * gae
         returns[i] = gae

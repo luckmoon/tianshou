@@ -73,11 +73,13 @@ class VectorEnvType(Enum):
     """Parallelization based on the `ray` library"""
 
     def create_venv(self, factories: list[Callable[[], gym.Env]]) -> BaseVectorEnv:
+        print(f"self:{self}, len(factories):{len(factories)}")
         match self:
             case VectorEnvType.DUMMY:
                 return DummyVectorEnv(factories)
             case VectorEnvType.SUBPROC:
                 return SubprocVectorEnv(factories)
+            # mac 走这里
             case VectorEnvType.SUBPROC_SHARED_MEM:
                 return ShmemVectorEnv(factories)
             case VectorEnvType.RAY:
